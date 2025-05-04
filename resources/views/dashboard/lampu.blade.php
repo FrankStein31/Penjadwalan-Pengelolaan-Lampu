@@ -134,6 +134,26 @@
     .selected-row {
         background-color: rgba(0, 123, 255, 0.1) !important;
     }
+    
+    /* Datetime styles */
+    .datetime-container {
+        text-align: right;
+        color: #495057;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+    
+    .datetime-icon {
+        margin-right: 5px;
+        color: #6c757d;
+    }
+    
+    #current-datetime {
+        font-weight: 500;
+    }
 </style>
 
 <div class="hero">
@@ -141,47 +161,55 @@
     <p>Atur dan pantau penggunaan lampu pintar</p>
 </div>
 
-<div class="container text-center mt-4">
-    <div class="lampu-container" id="lampu-container">
-        <div class="lampu-glow"></div> <!-- Efek bias cahaya -->
-        <svg class="lampu-svg" viewBox="0 0 100 180">
-            <!-- Bohlam lampu -->
-            <ellipse class="lampu-bulb" cx="50" cy="50" rx="25" ry="30" />
+<div class="container mt-4">
+    <!-- Datetime realtime display -->
+    <div class="datetime-container">
+        <i class="fa fa-clock datetime-icon"></i>
+        <span id="current-datetime">Memuat waktu...</span>
+    </div>
+    
+    <div class="text-center">
+        <div class="lampu-container" id="lampu-container">
+            <div class="lampu-glow"></div> <!-- Efek bias cahaya -->
+            <svg class="lampu-svg" viewBox="0 0 100 180">
+                <!-- Bohlam lampu -->
+                <ellipse class="lampu-bulb" cx="50" cy="50" rx="25" ry="30" />
+                
+                <!-- Filamen dalam bohlam -->
+                <path class="lampu-filament" d="M40,50 C45,40 55,60 60,50" />
+                <path class="lampu-filament" d="M40,50 C45,60 55,40 60,50" />
+                
+                <!-- Highlight bohlam -->
+                <ellipse class="lampu-highlight" cx="40" cy="40" rx="8" ry="10" />
+                
+                <!-- Bagian sekrup bohlam -->
+                <rect class="lampu-screw" x="40" y="80" width="20" height="10" rx="2" />
+                <rect class="lampu-screw" x="42" y="90" width="16" height="5" rx="1" />
+                
+                <!-- Tiang lampu -->
+                <rect class="lampu-rod" x="45" y="95" width="10" height="55" />
+                
+                <!-- Alas lampu -->
+                <ellipse class="lampu-base" cx="50" cy="155" rx="25" ry="10" />
+                <ellipse fill="#2c3e50" cx="50" cy="152" rx="20" ry="7" />
+            </svg>
             
-            <!-- Filamen dalam bohlam -->
-            <path class="lampu-filament" d="M40,50 C45,40 55,60 60,50" />
-            <path class="lampu-filament" d="M40,50 C45,60 55,40 60,50" />
+            <!-- Refleksi di bawah lampu -->
+            <div class="lampu-reflection"></div>
             
-            <!-- Highlight bohlam -->
-            <ellipse class="lampu-highlight" cx="40" cy="40" rx="8" ry="10" />
-            
-            <!-- Bagian sekrup bohlam -->
-            <rect class="lampu-screw" x="40" y="80" width="20" height="10" rx="2" />
-            <rect class="lampu-screw" x="42" y="90" width="16" height="5" rx="1" />
-            
-            <!-- Tiang lampu -->
-            <rect class="lampu-rod" x="45" y="95" width="10" height="55" />
-            
-            <!-- Alas lampu -->
-            <ellipse class="lampu-base" cx="50" cy="155" rx="25" ry="10" />
-            <ellipse fill="#2c3e50" cx="50" cy="152" rx="20" ry="7" />
-        </svg>
-        
-        <!-- Refleksi di bawah lampu -->
-        <div class="lampu-reflection"></div>
-        
-        <!-- Input hidden untuk lampu yang dipilih -->
-        <input type="hidden" id="selected-lampu-id" value="">
-        <h5 class="mt-2 mb-2">Atur Kecerahan</h5>
+            <!-- Input hidden untuk lampu yang dipilih -->
+            <input type="hidden" id="selected-lampu-id" value="">
+            <h5 class="mt-2 mb-2">Atur Kecerahan</h5>
 
-        <!-- Tombol Opsi Brightness -->
-        <div class="btn-group mt-1" role="group" aria-label="Brightness Options">
-            <button type="button" class="btn btn-outline-dark" onclick="setBrightness(0)">Mati</button>
-            <button type="button" class="btn btn-outline-secondary" onclick="setBrightness(1)">Redup</button>
-            <button type="button" class="btn btn-outline-warning" onclick="setBrightness(2)">Sedang</button>
-            <button type="button" class="btn btn-outline-primary" onclick="setBrightness(3)">Terang</button>
+            <!-- Tombol Opsi Brightness -->
+            <div class="btn-group mt-1" role="group" aria-label="Brightness Options">
+                <button type="button" class="btn btn-outline-dark" onclick="setBrightness(0)">Mati</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="setBrightness(1)">Redup</button>
+                <button type="button" class="btn btn-outline-warning" onclick="setBrightness(2)">Sedang</button>
+                <button type="button" class="btn btn-outline-primary" onclick="setBrightness(3)">Terang</button>
+            </div>
+            <p class="text-muted mt-2">Pilih lampu dari tabel untuk mengatur kecerahannya</p>
         </div>
-        <p class="text-muted mt-2">Pilih lampu dari tabel untuk mengatur kecerahannya</p>
     </div>
 </div>
 
@@ -309,102 +337,28 @@
 </div>
 
 <script>
-    function setBrightness(level) {
-        const container = document.getElementById('lampu-container');
-        container.classList.remove('brightness-0', 'brightness-1', 'brightness-2', 'brightness-3');
-        
-        if (level > 0) {
-            container.classList.add(`brightness-${level}`);
-        }
-        
-        // Jika ada lampu yang dipilih, update intensitasnya
-        const selectedLampu = document.getElementById('selected-lampu-id');
-        if (selectedLampu && selectedLampu.value) {
-            const lampuId = selectedLampu.value;
-            let intensitas = 0;
-            
-            // Konversi level ke nilai intensitas
-            switch(level) {
-                case 0: intensitas = 0; break;    // Mati
-                case 1: intensitas = 30; break;   // Redup
-                case 2: intensitas = 70; break;   // Sedang
-                case 3: intensitas = 100; break;  // Terang
-            }
-            
-            // Kirim ke server
-            updateLampuIntensitas(lampuId, level > 0 ? 1 : 0, intensitas);
-        } else {
-            console.log('Belum ada lampu yang dipilih, silakan pilih lampu terlebih dahulu');
-            alert('Silakan pilih lampu terlebih dahulu dari tabel');
-        }
+    // Fungsi untuk memperbarui waktu secara realtime
+    function updateDateTime() {
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        };
+        document.getElementById('current-datetime').textContent = now.toLocaleDateString('id-ID', options);
     }
     
-    // Fungsi untuk update status dan intensitas lampu
-    function updateLampuIntensitas(lampuId, status, intensitas) {
-        // Ambil token CSRF dari meta tag
-        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
-        fetch(`/api/lampu/${lampuId}/status`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token
-            },
-            body: JSON.stringify({
-                status: status,
-                intensitas: intensitas
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if(data.success) {
-                const row = document.querySelector(`tr[data-id="${lampuId}"]`);
-                if (row) {
-                    const statusBadge = row.querySelector('.badge');
-                    const statusBtn = row.querySelector('.toggle-status');
-                    const intensitasInfo = row.querySelector('.intensitas-info');
-                    
-                    if (status) {
-                        statusBadge.classList.remove('bg-danger');
-                        statusBadge.classList.add('bg-success');
-                        statusBadge.textContent = 'Hidup';
-                        statusBtn.textContent = 'Matikan';
-                        statusBtn.dataset.status = 1;
-                    } else {
-                        statusBadge.classList.remove('bg-success');
-                        statusBadge.classList.add('bg-danger');
-                        statusBadge.textContent = 'Mati';
-                        statusBtn.textContent = 'Hidupkan';
-                        statusBtn.dataset.status = 0;
-                    }
-                    
-                    if (intensitasInfo) {
-                        intensitasInfo.textContent = `${intensitas}%`;
-                    }
-                    
-                    const selectBtn = row.querySelector('.select-lampu');
-                    if (selectBtn) {
-                        selectBtn.dataset.intensitas = intensitas;
-                        selectBtn.dataset.status = status;
-                    }
-                }
-            } else {
-                console.error('Error updating lamp:', data.message || 'Unknown error');
-                alert('Gagal mengubah status lampu');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Terjadi kesalahan saat mengubah status lampu');
-        });
-    }
-
+    // Update waktu setiap detik
+    setInterval(updateDateTime, 1000);
+    
+    // Update waktu saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
+        updateDateTime();
+        
         // Event listener untuk tombol toggle status
         document.querySelectorAll('.toggle-status').forEach(button => {
             button.addEventListener('click', function() {
@@ -479,6 +433,104 @@
             });
         }
     });
+    
+    function setBrightness(level) {
+        const container = document.getElementById('lampu-container');
+        container.classList.remove('brightness-0', 'brightness-1', 'brightness-2', 'brightness-3');
+        
+        if (level > 0) {
+            container.classList.add(`brightness-${level}`);
+        }
+        
+        // Jika ada lampu yang dipilih, update intensitasnya
+        const selectedLampu = document.getElementById('selected-lampu-id');
+        if (selectedLampu && selectedLampu.value) {
+            const lampuId = selectedLampu.value;
+            let intensitas = 0;
+            
+            // Konversi level ke nilai intensitas
+            switch(level) {
+                case 0: intensitas = 0; break;    // Mati
+                case 1: intensitas = 30; break;   // Redup
+                case 2: intensitas = 70; break;   // Sedang
+                case 3: intensitas = 100; break;  // Terang
+            }
+            
+            // Kirim ke server
+            updateLampuIntensitas(lampuId, level > 0 ? 1 : 0, intensitas);
+        } else {
+            console.log('Belum ada lampu yang dipilih, silakan pilih lampu terlebih dahulu');
+            alert('Silakan pilih lampu terlebih dahulu dari tabel');
+        }
+    }
+    
+    // Fungsi untuk update status dan intensitas lampu
+    function updateLampuIntensitas(lampuId, status, intensitas) {
+        // Ambil token CSRF dari meta tag
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        fetch(`/api/lampu/${lampuId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token
+            },
+            body: JSON.stringify({
+                status: status,
+                intensitas: intensitas
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if(data.success) {
+                // Update tampilan tabel
+                const row = document.querySelector(`tr[data-id="${lampuId}"]`);
+                if (row) {
+                    const statusBadge = row.querySelector('.badge');
+                    const statusBtn = row.querySelector('.toggle-status');
+                    const intensitasInfo = row.querySelector('.intensitas-info');
+                    
+                    if (status) {
+                        statusBadge.classList.remove('bg-danger');
+                        statusBadge.classList.add('bg-success');
+                        statusBadge.textContent = 'Hidup';
+                        statusBtn.textContent = 'Matikan';
+                        statusBtn.dataset.status = 1;
+                    } else {
+                        statusBadge.classList.remove('bg-success');
+                        statusBadge.classList.add('bg-danger');
+                        statusBadge.textContent = 'Mati';
+                        statusBtn.textContent = 'Hidupkan';
+                        statusBtn.dataset.status = 0;
+                    }
+                    
+                    // Update info intensitas
+                    if (intensitasInfo) {
+                        intensitasInfo.textContent = `${intensitas}%`;
+                    }
+                    
+                    // Update data-intensitas pada tombol select
+                    const selectBtn = row.querySelector('.select-lampu');
+                    if (selectBtn) {
+                        selectBtn.dataset.intensitas = intensitas;
+                        selectBtn.dataset.status = status;
+                    }
+                }
+            } else {
+                console.error('Error updating lamp:', data.message || 'Unknown error');
+                alert('Gagal mengubah status lampu');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat mengubah status lampu');
+        });
+    }
 </script>
 
 @endsection
