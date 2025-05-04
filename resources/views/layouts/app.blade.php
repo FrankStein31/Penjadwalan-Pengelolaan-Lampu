@@ -21,6 +21,7 @@
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f8f9fa;
+            padding-top: 56px; 
         }
         .container-main {
             background: white;
@@ -28,13 +29,21 @@
             border-radius: 10px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
         }
+        .navbar-sticky {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
     <div class="min-h-screen">
         
         <!-- Navbar -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow navbar-sticky">
             <div class="container">
                 <a class="navbar-brand fw-bold" href="{{ route('lampu.index') }}">Smart Lighting</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
