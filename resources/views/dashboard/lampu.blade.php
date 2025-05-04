@@ -9,10 +9,17 @@
         padding: 60px 20px;
         text-align: center;
         border-radius: 10px;
+        margin-bottom: 30px;
     }
     .card-custom {
         border-radius: 10px;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 25px;
+        transition: all 0.3s;
+    }
+    .card-custom:hover {
+        transform: translateY(-5px);
+        box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
     }
     .lampu-container {
         display: flex;
@@ -22,6 +29,10 @@
         position: relative;
         height: 300px;
         margin-bottom: 20px;
+        background-color: #f8f9fa;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
     }
     .lampu-svg {
         width: 140px;
@@ -137,6 +148,10 @@
     
     /* Datetime styles */
     .datetime-container {
+        background-color: white;
+        padding: 10px 15px;
+        border-radius: 10px;
+        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
         text-align: right;
         color: #495057;
         margin-bottom: 15px;
@@ -147,8 +162,9 @@
     }
     
     .datetime-icon {
-        margin-right: 5px;
-        color: #6c757d;
+        margin-right: 8px;
+        color: #0d6efd;
+        font-size: 1.2rem;
     }
     
     #current-datetime {
@@ -171,6 +187,12 @@
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 15px;
+        transition: all 0.3s;
+    }
+    
+    .detail-stat:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     
     .detail-stat-value {
@@ -214,6 +236,19 @@
         margin-bottom: 20px;
         color: #343a40;
         font-weight: 600;
+        position: relative;
+        padding-bottom: 10px;
+    }
+    
+    .consumption-summary h3:after {
+        content: '';
+        position: absolute;
+        display: block;
+        width: 50px;
+        height: 3px;
+        background: #0d6efd;
+        bottom: 0;
+        left: 0;
     }
     
     .consumption-tabs .nav-link {
@@ -234,6 +269,133 @@
         height: 250px;
         margin-top: 15px;
     }
+    
+    /* Tabel lampu */
+    .table {
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+    
+    .table thead th {
+        border-bottom: none;
+        background-color: #343a40;
+        color: white;
+        padding: 12px;
+    }
+    
+    .table tbody tr {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+    
+    .table tbody tr:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .table tbody td {
+        background-color: #fff;
+        vertical-align: middle;
+        padding: 12px;
+    }
+    
+    .table tbody td:first-child {
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+    }
+    
+    .table tbody td:last-child {
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+    
+    /* Brightness control buttons */
+    .btn-brightness {
+        flex: 1;
+        padding: 10px;
+        font-weight: 500;
+        margin: 0 5px;
+        transition: all 0.3s;
+    }
+    
+    .btn-brightness:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .brightness-control {
+        margin-top: 15px;
+        width: 100%;
+    }
+    
+    .section-title {
+        position: relative;
+        margin-bottom: 30px;
+        padding-bottom: 10px;
+        text-align: center;
+        font-weight: 600;
+    }
+    
+    .section-title:after {
+        content: '';
+        position: absolute;
+        display: block;
+        width: 50px;
+        height: 3px;
+        background: #0d6efd;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    /* Contoh urutan jadwal */
+    .schedule-example {
+        background-color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .schedule-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 8px;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+    
+    .schedule-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .schedule-time {
+        font-weight: 600;
+        min-width: 80px;
+    }
+    
+    .schedule-action {
+        margin-left: 10px;
+        padding: 3px 8px;
+        border-radius: 4px;
+    }
+    
+    .action-on {
+        background-color: rgba(25, 135, 84, 0.2);
+        color: #198754;
+    }
+    
+    .action-off {
+        background-color: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+    }
+    
+    .action-dim {
+        background-color: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+    }
 </style>
 
 <div class="hero">
@@ -241,7 +403,7 @@
     <p>Atur dan pantau penggunaan lampu pintar</p>
 </div>
 
-<div class="container mt-4">
+<div class="container">
     <!-- Datetime realtime display -->
     <div class="datetime-container">
         <i class="fa fa-clock datetime-icon"></i>
@@ -283,59 +445,82 @@
         </div>
     </div>
     
-    <div class="text-center">
-        <div class="lampu-container" id="lampu-container">
-            <div class="lampu-glow"></div> <!-- Efek bias cahaya -->
-            <svg class="lampu-svg" viewBox="0 0 100 180">
-                <!-- Bohlam lampu -->
-                <ellipse class="lampu-bulb" cx="50" cy="50" rx="25" ry="30" />
-                
-                <!-- Filamen dalam bohlam -->
-                <path class="lampu-filament" d="M40,50 C45,40 55,60 60,50" />
-                <path class="lampu-filament" d="M40,50 C45,60 55,40 60,50" />
-                
-                <!-- Highlight bohlam -->
-                <ellipse class="lampu-highlight" cx="40" cy="40" rx="8" ry="10" />
-                
-                <!-- Bagian sekrup bohlam -->
-                <rect class="lampu-screw" x="40" y="80" width="20" height="10" rx="2" />
-                <rect class="lampu-screw" x="42" y="90" width="16" height="5" rx="1" />
-                
-                <!-- Tiang lampu -->
-                <rect class="lampu-rod" x="45" y="95" width="10" height="55" />
-                
-                <!-- Alas lampu -->
-                <ellipse class="lampu-base" cx="50" cy="155" rx="25" ry="10" />
-                <ellipse fill="#2c3e50" cx="50" cy="152" rx="20" ry="7" />
-            </svg>
-            
-            <!-- Refleksi di bawah lampu -->
-            <div class="lampu-reflection"></div>
-            
-            <!-- Input hidden untuk lampu yang dipilih -->
-            <input type="hidden" id="selected-lampu-id" value="">
-            <h5 class="mt-2 mb-2">Atur Kecerahan</h5>
-
-            <!-- Tombol Opsi Brightness -->
-            <div class="btn-group mt-1" role="group" aria-label="Brightness Options">
-                <button type="button" class="btn btn-outline-dark" onclick="setBrightness(0)">Mati</button>
-                <button type="button" class="btn btn-outline-secondary" onclick="setBrightness(1)">Redup</button>
-                <button type="button" class="btn btn-outline-warning" onclick="setBrightness(2)">Sedang</button>
-                <button type="button" class="btn btn-outline-primary" onclick="setBrightness(3)">Terang</button>
+    <!-- Area kontrol lampu -->
+    <div class="card card-custom p-4">
+        <h5 class="section-title mb-4">Pengaturan Kecerahan Lampu</h5>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="lampu-container" id="lampu-container">
+                    <div class="lampu-glow"></div> <!-- Efek bias cahaya -->
+                    <svg class="lampu-svg" viewBox="0 0 100 180">
+                        <!-- Bohlam lampu -->
+                        <ellipse class="lampu-bulb" cx="50" cy="50" rx="25" ry="30" />
+                        
+                        <!-- Filamen dalam bohlam -->
+                        <path class="lampu-filament" d="M40,50 C45,40 55,60 60,50" />
+                        <path class="lampu-filament" d="M40,50 C45,60 55,40 60,50" />
+                        
+                        <!-- Highlight bohlam -->
+                        <ellipse class="lampu-highlight" cx="40" cy="40" rx="8" ry="10" />
+                        
+                        <!-- Bagian sekrup bohlam -->
+                        <rect class="lampu-screw" x="40" y="80" width="20" height="10" rx="2" />
+                        <rect class="lampu-screw" x="42" y="90" width="16" height="5" rx="1" />
+                        
+                        <!-- Tiang lampu -->
+                        <rect class="lampu-rod" x="45" y="95" width="10" height="55" />
+                        
+                        <!-- Alas lampu -->
+                        <ellipse class="lampu-base" cx="50" cy="155" rx="25" ry="10" />
+                        <ellipse fill="#2c3e50" cx="50" cy="152" rx="20" ry="7" />
+                    </svg>
+                    
+                    <!-- Refleksi di bawah lampu -->
+                    <div class="lampu-reflection"></div>
+                </div>
             </div>
-            <p class="text-muted mt-2">Pilih lampu dari tabel untuk mengatur kecerahannya</p>
+            
+            <div class="col-md-6 d-flex flex-column justify-content-center">
+                <!-- Input hidden untuk lampu yang dipilih -->
+                <input type="hidden" id="selected-lampu-id" value="">
+                
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3">Atur Tingkat Kecerahan</h6>
+                    <div class="brightness-control d-flex">
+                        <button type="button" class="btn btn-outline-dark btn-brightness" onclick="setBrightness(0)">Mati</button>
+                        <button type="button" class="btn btn-outline-secondary btn-brightness" onclick="setBrightness(1)">Redup</button>
+                        <button type="button" class="btn btn-outline-warning btn-brightness" onclick="setBrightness(2)">Sedang</button>
+                        <button type="button" class="btn btn-outline-primary btn-brightness" onclick="setBrightness(3)">Terang</button>
+                    </div>
+                </div>
+                
+                <div class="alert alert-primary text-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Pilih lampu dari tabel di bawah untuk mengatur kecerahan
+                </div>
+                
+                <div class="d-grid gap-2 mt-2">
+                    <a href="{{ route('jadwal.index') }}" class="btn btn-primary">
+                        <i class="fas fa-calendar-alt me-2"></i> Atur Jadwal Lampu
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <div class="container mt-5">
-    <h2 class="text-center">Daftar Lampu</h2>
-    <div class="d-flex justify-content-end">
-        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#tambahLampuModal">Tambah Lampu</button>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title m-0">Daftar Lampu</h2>
+        <button class="btn btn-primary shadow" data-bs-toggle="modal" data-bs-target="#tambahLampuModal">
+            <i class="fas fa-plus me-2"></i> Tambah Lampu
+        </button>
     </div>
-    <div class="table-responsive mt-3">
-        <table class="table table-hover card-custom">
-            <thead class="table-dark">
+    
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
                 <tr>
                     <th>ID</th>
                     <th>Nama Lampu</th>
@@ -358,43 +543,49 @@
                     </td>
                     <td><span class="intensitas-info">{{ $l->intensitas }}%</span></td>
                     <td>
-                        <button class="btn btn-info btn-sm select-lampu" 
-                                data-id="{{ $l->id }}" 
-                                data-status="{{ $l->status }}"
-                                data-intensitas="{{ $l->intensitas }}">
-                            Pilih
-                        </button>
-                        <button class="btn btn-success btn-sm toggle-status" data-id="{{ $l->id }}" data-status="{{ $l->status }}">
-                            {{ $l->status ? 'Matikan' : 'Hidupkan' }}
-                        </button>
-                        <button class="btn btn-primary btn-sm view-detail" 
-                                data-id="{{ $l->id }}"
-                                data-nama="{{ $l->nama_lampu }}"
-                                data-lokasi="{{ $l->lokasi }}"
-                                data-status="{{ $l->status }}"
-                                data-intensitas="{{ $l->intensitas }}"
-                                data-bs-toggle="modal" 
-                                data-bs-target="#detailLampuModal">
-                            <i class="fa fa-chart-line"></i> Detail
-                        </button>
-                        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editLampuModal" 
-                            data-id="{{ $l->id }}" 
-                            data-nama="{{ $l->nama_lampu }}" 
-                            data-lokasi="{{ $l->lokasi }}">
-                            Edit
-                        </button>
-                        <form action="{{ route('lampu.destroy', $l->id) }}" method="POST" class="d-inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus?')">
-                                Hapus
+                        <div class="btn-group">
+                            <button class="btn btn-info btn-sm select-lampu" 
+                                    data-id="{{ $l->id }}" 
+                                    data-status="{{ $l->status }}"
+                                    data-intensitas="{{ $l->intensitas }}">
+                                <i class="fas fa-hand-pointer"></i> Pilih
                             </button>
-                        </form>
+                            <button class="btn btn-success btn-sm toggle-status" data-id="{{ $l->id }}" data-status="{{ $l->status }}">
+                                {{ $l->status ? 'Matikan' : 'Hidupkan' }}
+                            </button>
+                            <button class="btn btn-primary btn-sm view-detail" 
+                                    data-id="{{ $l->id }}"
+                                    data-nama="{{ $l->nama_lampu }}"
+                                    data-lokasi="{{ $l->lokasi }}"
+                                    data-status="{{ $l->status }}"
+                                    data-intensitas="{{ $l->intensitas }}"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#detailLampuModal">
+                                <i class="fa fa-chart-line"></i> Detail
+                            </button>
+                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editLampuModal" 
+                                data-id="{{ $l->id }}" 
+                                data-nama="{{ $l->nama_lampu }}" 
+                                data-lokasi="{{ $l->lokasi }}">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <form action="{{ route('lampu.destroy', $l->id) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus?')">
+                                    <i class="fas fa-trash"></i> Hapus
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center">Belum ada data lampu</td>
+                    <td colspan="6" class="text-center py-4">
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i> Belum ada data lampu
+                        </div>
+                    </td>
                 </tr>
                 @endforelse
             </tbody>

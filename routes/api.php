@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LampuController;
+use App\Http\Controllers\JadwalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,3 +28,6 @@ Route::get('/lampu/{id}/statistik', [LampuController::class, 'getStatistik']);
 
 // Route API untuk total penggunaan semua lampu
 Route::get('/lampu/total-penggunaan', [LampuController::class, 'getTotalPenggunaan']);
+
+// Route API untuk menjalankan jadwal
+Route::get('/jadwal/execute', [JadwalController::class, 'executeSchedule']);

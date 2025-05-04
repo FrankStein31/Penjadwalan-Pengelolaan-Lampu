@@ -10,7 +10,15 @@ class Jadwal extends Model
     use HasFactory;
 
     protected $table = 'jadwal';
-    protected $fillable = ['lampu_id', 'hari', 'waktu_nyala', 'waktu_mati'];
+    protected $fillable = [
+        'lampu_id', 
+        'hari', 
+        'waktu_nyala', 
+        'waktu_mati',
+        'frekuensi',
+        'tanggal_bulanan',
+        'intensitas'
+    ];
     
     public function lampu()
     {
