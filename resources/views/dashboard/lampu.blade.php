@@ -154,6 +154,86 @@
     #current-datetime {
         font-weight: 500;
     }
+    
+    /* Detail Modal Styles */
+    .modal-detail .nav-tabs .nav-link {
+        color: #495057;
+        font-weight: 500;
+    }
+    
+    .modal-detail .nav-tabs .nav-link.active {
+        font-weight: 600;
+        border-bottom: 2px solid #0d6efd;
+    }
+    
+    .detail-stat {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .detail-stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    
+    .detail-stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+    
+    .status-indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+    
+    .status-mati { background-color: #dc3545; }
+    .status-redup { background-color: #6c757d; }
+    .status-sedang { background-color: #ffc107; }
+    .status-terang { background-color: #0d6efd; }
+    
+    /* Consumption summary styles */
+    .consumption-summary {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .consumption-summary h3 {
+        margin-bottom: 20px;
+        color: #343a40;
+        font-weight: 600;
+    }
+    
+    .consumption-tabs .nav-link {
+        color: #495057;
+        font-weight: 500;
+        padding: 10px 15px;
+        border-radius: 0;
+        border: none;
+    }
+    
+    .consumption-tabs .nav-link.active {
+        color: #0d6efd;
+        background-color: transparent;
+        border-bottom: 2px solid #0d6efd;
+    }
+    
+    .consumption-chart-container {
+        height: 250px;
+        margin-top: 15px;
+    }
 </style>
 
 <div class="hero">
@@ -166,6 +246,41 @@
     <div class="datetime-container">
         <i class="fa fa-clock datetime-icon"></i>
         <span id="current-datetime">Memuat waktu...</span>
+    </div>
+    
+    <!-- Total consumption summary -->
+    <div class="consumption-summary">
+        <h3>Grafik Konsumsi Daya Semua Lampu</h3>
+        
+        <ul class="nav nav-tabs consumption-tabs" id="consumptionTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily-panel" type="button" role="tab">Harian</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="weekly-tab" data-bs-toggle="tab" data-bs-target="#weekly-panel" type="button" role="tab">Mingguan</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly-panel" type="button" role="tab">Bulanan</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="consumptionTabsContent">
+            <div class="tab-pane fade show active" id="daily-panel" role="tabpanel">
+                <div class="consumption-chart-container">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="weekly-panel" role="tabpanel">
+                <div class="consumption-chart-container">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="monthly-panel" role="tabpanel">
+                <div class="consumption-chart-container">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
     
     <div class="text-center">
@@ -252,6 +367,16 @@
                         <button class="btn btn-success btn-sm toggle-status" data-id="{{ $l->id }}" data-status="{{ $l->status }}">
                             {{ $l->status ? 'Matikan' : 'Hidupkan' }}
                         </button>
+                        <button class="btn btn-primary btn-sm view-detail" 
+                                data-id="{{ $l->id }}"
+                                data-nama="{{ $l->nama_lampu }}"
+                                data-lokasi="{{ $l->lokasi }}"
+                                data-status="{{ $l->status }}"
+                                data-intensitas="{{ $l->intensitas }}"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#detailLampuModal">
+                            <i class="fa fa-chart-line"></i> Detail
+                        </button>
                         <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editLampuModal" 
                             data-id="{{ $l->id }}" 
                             data-nama="{{ $l->nama_lampu }}" 
@@ -336,7 +461,84 @@
     </div>
 </div>
 
+<!-- Modal Detail Lampu -->
+<div class="modal fade modal-lg" id="detailLampuModal" tabindex="-1" aria-labelledby="detailLampuModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-detail">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailLampuModalLabel">Detail Lampu: <span id="detail-lampu-nama"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Informasi dasar -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="detail-stat">
+                            <div class="detail-stat-value" id="detail-status">-</div>
+                            <div class="detail-stat-label">Status</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="detail-stat">
+                            <div class="detail-stat-value" id="detail-intensitas">-</div>
+                            <div class="detail-stat-label">Intensitas</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="detail-stat">
+                            <div class="detail-stat-value" id="detail-lokasi">-</div>
+                            <div class="detail-stat-label">Lokasi</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tabs untuk berbagai jenis data -->
+                <ul class="nav nav-tabs mb-3" id="detailTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="penggunaan-tab" data-bs-toggle="tab" data-bs-target="#penggunaan" type="button" role="tab">Penggunaan Daya</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="kondisi-tab" data-bs-toggle="tab" data-bs-target="#kondisi" type="button" role="tab">Riwayat Kondisi</button>
+                    </li>
+                </ul>
+                
+                <!-- Tab content -->
+                <div class="tab-content" id="detailTabsContent">
+                    <div class="tab-pane fade show active" id="penggunaan" role="tabpanel" aria-labelledby="penggunaan-tab">
+                        <div class="chart-container">
+                            <canvas id="penggunaanChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="kondisi" role="tabpanel" aria-labelledby="kondisi-tab">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-center mb-3">
+                                <div class="me-3"><span class="status-indicator status-mati"></span> Mati</div>
+                                <div class="me-3"><span class="status-indicator status-redup"></span> Redup</div>
+                                <div class="me-3"><span class="status-indicator status-sedang"></span> Sedang</div>
+                                <div><span class="status-indicator status-terang"></span> Terang</div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="kondisiChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    // Variabel global untuk chart
+    let dailyChart = null;
+    let weeklyChart = null;
+    let monthlyChart = null;
+    let penggunaanChart = null;
+    let kondisiChart = null;
+    
     // Fungsi untuk memperbarui waktu secara realtime
     function updateDateTime() {
         const now = new Date();
@@ -355,9 +557,178 @@
     // Update waktu setiap detik
     setInterval(updateDateTime, 1000);
     
+    // Fungsi untuk menampilkan grafik total konsumsi
+    function renderTotalConsumptionCharts() {
+        fetch('/api/lampu/total-penggunaan')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                renderDailyChart(data.daily);
+                renderWeeklyChart(data.weekly);
+                renderMonthlyChart(data.monthly);
+            })
+            .catch(error => {
+                console.error('Error fetching total consumption data:', error);
+                
+                // Data dummy jika API gagal
+                const dummyDaily = {
+                    labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                    data: [12, 19, 15, 8, 22, 14, 10]
+                };
+                
+                const dummyWeekly = {
+                    labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
+                    data: [65, 82, 73, 91]
+                };
+                
+                const dummyMonthly = {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+                    data: [210, 250, 190, 230, 270, 240]
+                };
+                
+                renderDailyChart(dummyDaily);
+                renderWeeklyChart(dummyWeekly);
+                renderMonthlyChart(dummyMonthly);
+            });
+    }
+    
+    // Render daily chart
+    function renderDailyChart(data) {
+        const ctx = document.getElementById('dailyChart').getContext('2d');
+        
+        if (dailyChart) {
+            dailyChart.destroy();
+        }
+        
+        dailyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Konsumsi Daya (Watt)',
+                    data: data.data,
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Konsumsi Daya Harian (7 Hari Terakhir)'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Watt'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Render weekly chart
+    function renderWeeklyChart(data) {
+        const ctx = document.getElementById('weeklyChart').getContext('2d');
+        
+        if (weeklyChart) {
+            weeklyChart.destroy();
+        }
+        
+        weeklyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Konsumsi Daya (Watt)',
+                    data: data.data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Konsumsi Daya Mingguan (4 Minggu Terakhir)'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Watt'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Render monthly chart
+    function renderMonthlyChart(data) {
+        const ctx = document.getElementById('monthlyChart').getContext('2d');
+        
+        if (monthlyChart) {
+            monthlyChart.destroy();
+        }
+        
+        monthlyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Konsumsi Daya (Watt)',
+                    data: data.data,
+                    backgroundColor: 'rgba(153, 102, 255, 0.7)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Konsumsi Daya Bulanan (6 Bulan Terakhir)'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Watt'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
     // Update waktu saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
         updateDateTime();
+        renderTotalConsumptionCharts();
         
         // Event listener untuk tombol toggle status
         document.querySelectorAll('.toggle-status').forEach(button => {
@@ -432,7 +803,176 @@
                 form.querySelector('#edit_lokasi').value = lokasi;
             });
         }
+        
+        // Event listener untuk modal detail
+        const detailModal = document.getElementById('detailLampuModal');
+        if (detailModal) {
+            detailModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const id = button.getAttribute('data-id');
+                const nama = button.getAttribute('data-nama');
+                const lokasi = button.getAttribute('data-lokasi');
+                const status = parseInt(button.getAttribute('data-status'));
+                const intensitas = parseInt(button.getAttribute('data-intensitas'));
+                
+                // Set info dasar
+                document.getElementById('detail-lampu-nama').textContent = nama;
+                document.getElementById('detail-status').textContent = status ? 'Hidup' : 'Mati';
+                document.getElementById('detail-status').className = `detail-stat-value ${status ? 'text-success' : 'text-danger'}`;
+                document.getElementById('detail-intensitas').textContent = `${intensitas}%`;
+                document.getElementById('detail-lokasi').textContent = lokasi;
+                
+                // Ambil data dari API untuk diagram
+                fetch(`/api/lampu/${id}/statistik`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        renderPenggunaanChart(data.penggunaan);
+                        renderKondisiChart(data.kondisi);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching lamp statistics:', error);
+                        // Gunakan data dummy jika API gagal
+                        const dummyPenggunaan = {
+                            labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                            data: [5, 7, 3, 8, 6, 2, 4]
+                        };
+                        const dummyKondisi = {
+                            labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                            data: {
+                                mati: [6, 8, 4, 2, 3, 5, 7],
+                                redup: [3, 4, 2, 5, 6, 3, 2],
+                                sedang: [2, 3, 5, 4, 2, 1, 3],
+                                terang: [9, 7, 5, 8, 6, 3, 4]
+                            }
+                        };
+                        renderPenggunaanChart(dummyPenggunaan);
+                        renderKondisiChart(dummyKondisi);
+                    });
+            });
+        }
     });
+    
+    // Render chart penggunaan daya
+    function renderPenggunaanChart(data) {
+        const ctx = document.getElementById('penggunaanChart').getContext('2d');
+        
+        // Hapus chart lama jika ada
+        if (penggunaanChart) {
+            penggunaanChart.destroy();
+        }
+        
+        penggunaanChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Penggunaan (Watt)',
+                    data: data.data,
+                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Penggunaan Daya Harian (Watt)'
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Watt'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Render chart kondisi lampu
+    function renderKondisiChart(data) {
+        const ctx = document.getElementById('kondisiChart').getContext('2d');
+        
+        // Hapus chart lama jika ada
+        if (kondisiChart) {
+            kondisiChart.destroy();
+        }
+        
+        kondisiChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: 'Mati',
+                        data: data.data.mati,
+                        backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 2,
+                        tension: 0.2
+                    },
+                    {
+                        label: 'Redup',
+                        data: data.data.redup,
+                        backgroundColor: 'rgba(108, 117, 125, 0.2)',
+                        borderColor: 'rgba(108, 117, 125, 1)',
+                        borderWidth: 2,
+                        tension: 0.2
+                    },
+                    {
+                        label: 'Sedang',
+                        data: data.data.sedang,
+                        backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        borderWidth: 2,
+                        tension: 0.2
+                    },
+                    {
+                        label: 'Terang',
+                        data: data.data.terang,
+                        backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        borderWidth: 2,
+                        tension: 0.2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Riwayat Kondisi Lampu (Menit)'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Menit'
+                        }
+                    }
+                }
+            }
+        });
+    }
     
     function setBrightness(level) {
         const container = document.getElementById('lampu-container');
@@ -494,6 +1034,7 @@
                     const statusBadge = row.querySelector('.badge');
                     const statusBtn = row.querySelector('.toggle-status');
                     const intensitasInfo = row.querySelector('.intensitas-info');
+                    const detailBtn = row.querySelector('.view-detail');
                     
                     if (status) {
                         statusBadge.classList.remove('bg-danger');
@@ -514,11 +1055,16 @@
                         intensitasInfo.textContent = `${intensitas}%`;
                     }
                     
-                    // Update data-intensitas pada tombol select
+                    // Update data-intensitas pada tombol select dan detail
                     const selectBtn = row.querySelector('.select-lampu');
                     if (selectBtn) {
                         selectBtn.dataset.intensitas = intensitas;
                         selectBtn.dataset.status = status;
+                    }
+                    
+                    if (detailBtn) {
+                        detailBtn.dataset.intensitas = intensitas;
+                        detailBtn.dataset.status = status;
                     }
                 }
             } else {

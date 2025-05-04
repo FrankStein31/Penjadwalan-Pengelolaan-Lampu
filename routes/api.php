@@ -21,3 +21,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // Route API untuk update status lampu
 Route::post('/lampu/{id}/status', [LampuController::class, 'updateStatus']);
+
+// Route API untuk statistik penggunaan lampu
+Route::get('/lampu/{id}/statistik', [LampuController::class, 'getStatistik']);
+
+// Route API untuk total penggunaan semua lampu
+Route::get('/lampu/total-penggunaan', [LampuController::class, 'getTotalPenggunaan']);
