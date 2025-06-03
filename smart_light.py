@@ -47,23 +47,25 @@ def log_message(level, message, error=None):
     current_log_time = get_formatted_time() # Ambil waktu saat ini untuk log
     log_string = f"[{current_log_time}][{level}] {message}"
     if error:
-        # *FIXED HERE:* Use _name_ for exception type
+        # KOREKSI FINAL UNTUK AttributeError: Menggunakan _name_
         log_string += f" - {type(error)._name_}: {str(error)}"
     print(log_string)
 
 # --- Fungsi Waktu ---
 def sync_ntp():
-    global last_ntp_sync
+    global last_ntp_sync # Deklarasi global karena kita memodifikasi last_ntp_sync
     try:
         log_message("INFO", "Mencoba sinkronisasi waktu dengan NTP server...")
         ntptime.settime()
+        
         # Sesuaikan waktu dengan timezone WIB
-        _, _, _, _, hours, minutes, seconds, _ = rtc.datetime()
-        current = time.time() + UTC_OFFSET
-        (year, month, day, hours, minutes, seconds, weekday, _) = time.localtime(current)
+        current_utc_timestamp = time.time()
+        local_timestamp = current_utc_timestamp + UTC_OFFSET
+        (year, month, day, hours, minutes, seconds, weekday, yearday) = time.localtime(local_timestamp)
+        # Set RTC dengan waktu lokal yang sudah disesuaikan
         rtc.datetime((year, month, day, weekday, hours, minutes, seconds, 0))
         
-        last_ntp_sync = time.time()
+        last_ntp_sync = current_utc_timestamp # Simpan timestamp UTC untuk cek interval
         log_message("INFO", f"Waktu berhasil disinkronkan dengan NTP server: {get_formatted_time()}")
         return True
     except Exception as e:
@@ -71,18 +73,17 @@ def sync_ntp():
         return False
 
 def get_formatted_time():
-    # RTC.datetime() returns (year, month, day, weekday, hours, minutes, seconds, subseconds)
+    # RTC.datetime() mengembalikan (tahun, bulan, hari, hari_dalam_minggu, jam, menit, detik, subdetik)
     year, month, day, weekday, hours, minutes, seconds, _ = rtc.datetime()
     return f"{year:04d}-{month:02d}-{day:02d} {hours:02d}:{minutes:02d}:{seconds:02d}"
 
 def get_current_time_hhmm():
-    # Returns time in HH:MM format, useful for schedule checks if using exact time
+    # Mengembalikan waktu dalam format HH:MM, berguna untuk cek jadwal
     _, _, _, _, hours, minutes, _, _ = rtc.datetime()
     return f"{hours:02d}:{minutes:02d}"
 
 # --- Fungsi Koneksi WiFi ---
 def connect_wifi():
-    global retry_count # We're managing retry_count here for Wi-Fi as well
     try:
         wlan = network.WLAN(network.STA_IF)
         wlan.active(True)
@@ -91,7 +92,7 @@ def connect_wifi():
             wlan.connect(WIFI_SSID, WIFI_PASSWORD)
             
             connect_attempts = 0
-            while not wlan.isconnected() and connect_attempts < 20: # Increased attempts for Wi-Fi stability
+            while not wlan.isconnected() and connect_attempts < 20: # Tingkatkan percobaan untuk stabilitas WiFi
                 time.sleep(1)
                 connect_attempts += 1
             
@@ -99,15 +100,10 @@ def connect_wifi():
                 raise Exception("Gagal terhubung ke WiFi setelah 20 detik")
         
         log_message("INFO", f'Terhubung ke WiFi: {wlan.ifconfig()[0]}')
-        retry_count = 0 # Reset API retry counter on successful Wi-Fi connection
+        # retry_count direset oleh loop utama setelah koneksi WiFi berhasil.
         return True
     except Exception as e:
         log_message("ERROR", "Koneksi WiFi gagal", e)
-        retry_count += 1 # Use retry_count for Wi-Fi failures too
-        if retry_count >= MAX_RETRIES:
-            log_message("WARNING", "Melebihi batas maksimum percobaan WiFi, menunggu 30 detik sebelum mencoba lagi...")
-            time.sleep(30)
-            retry_count = 0 # Reset after long sleep
         return False
 
 # --- Fungsi Sensor Ultrasonik ---
@@ -119,13 +115,13 @@ def get_distance():
         time.sleep_us(10)
         trigger.value(0)
         
-        duration = time_pulse_us(echo, 1, 30000) # Timeout 30ms for ~5m range
+        duration = time_pulse_us(echo, 1, 30000) # Timeout 30ms untuk jangkauan ~5m
         
         if duration == -1:
-            # log_message("WARNING", "Timeout membaca sensor ultrasonik") # Often happens if no object
-            return -1 # Just return -1, log a warning if it persists or needs attention
+            # Mengembalikan -1 jika timeout. Logika pemanggilan akan menentukan apakah perlu logging.
+            return -1
                 
-        distance_cm = (duration / 2) / 29.1 # Speed of sound: 343m/s or 0.0343 cm/us
+        distance_cm = (duration / 2) / 29.1 # Kecepatan suara: 343m/s atau 0.0343 cm/us
         return distance_cm
     except Exception as e:
         log_message("ERROR", "Error membaca sensor ultrasonik", e)
@@ -133,34 +129,31 @@ def get_distance():
 
 # --- Fungsi Komunikasi API ---
 def check_lampu_status():
-    global light_on, retry_count
-    response = None
+    global light_on, retry_count # Deklarasi global karena kita mungkin memodifikasi light_on dan retry_count
+    response = None # Inisialisasi response ke None
     try:
         log_message("INFO", f"Mengambil status lampu {LAMPU_ID} dari {API_BASE_URL}/lampu/{LAMPU_ID}")
         response = urequests.get(f"{API_BASE_URL}/lampu/{LAMPU_ID}")
         data = response.json()
         
-        # Reset retry counter on successful API call
+        # Reset counter percobaan ulang saat API berhasil
         retry_count = 0 
         
-        # Ambil status dari database dengan .get() untuk keamanan
+        # Ambil status dari database dengan .get() untuk keamanan dan konversi ke boolean
         db_status = bool(data.get('status'))
         db_otomatis = bool(data.get('otomatis'))
         db_jadwal = bool(data.get('jadwal'))
-        db_intensitas = data.get('intensitas', 0)
+        db_intensitas = data.get('intensitas', 0) # Default ke 0 jika tidak ada
         
         log_message("INFO", f"Status dari DB: Jadwal={db_jadwal}, Otomatis={db_otomatis}, Lampu={'ON' if db_status else 'OFF'}")
         
-        # Update relay berdasarkan mode yang aktif
-        if db_jadwal:
-            # Mode jadwal aktif, status akan diupdate oleh fungsi check_schedule
-            log_message("INFO", "Mode Jadwal aktif, menunggu eksekusi jadwal...")
-        elif not db_otomatis:
-            # Mode Manual - update relay langsung dari status DB
+        # Fungsi ini memperbarui relay hanya jika dalam mode Manual atau Jadwal.
+        # Jika dalam mode Otomatis, logika sensor di main loop yang akan mengambil alih.
+        if db_jadwal or (not db_otomatis and not db_jadwal): # Jika mode jadwal aktif ATAU mode manual (jadwal & otomatis mati)
             if db_status != light_on:
                 relay.value(1 if db_status else 0)
                 light_on = db_status
-                log_message("INFO", f"Mode Manual - Relay diupdate: {'ON' if light_on else 'OFF'}")
+                log_message("INFO", f"Relay diupdate dari DB (mode Manual/Jadwal): {'ON' if light_on else 'OFF'}")
         
         return {
             'status': db_status,
@@ -168,47 +161,46 @@ def check_lampu_status():
             'jadwal': db_jadwal,
             'intensitas': db_intensitas
         }
-    except (OSError, ValueError) as e:
+    except (OSError, ValueError) as e: # Tangkap error jaringan dan parsing JSON
         retry_count += 1
         log_message("ERROR", f"Kesalahan API saat mengambil status (Percobaan {retry_count}/{MAX_RETRIES})", e)
         if retry_count >= MAX_RETRIES:
             log_message("WARNING", "Melebihi batas maksimum percobaan API, menunggu 30 detik...")
             time.sleep(30)
-            retry_count = 0
+            retry_count = 0 # Reset setelah jeda panjang
         return None
-    except Exception as e:
+    except Exception as e: # Tangkap error lain yang tidak terduga
         log_message("ERROR", "Kesalahan tidak terduga saat mengambil status lampu", e)
         return None
     finally:
         if response:
-            response.close()
+            response.close() # Pastikan response selalu ditutup
 
 def check_schedule():
-    global light_on
-    response = None
+    global light_on # Deklarasi global karena kita mungkin memodifikasi light_on
+    response = None # Inisialisasi response ke None
     try:
-        current_schedule_time = get_current_time_hhmm()
-        log_message("INFO", f"Mengecek jadwal lampu dari server pada {current_schedule_time}...")
+        current_schedule_time_hhmm = get_current_time_hhmm() # Dapatkan string HH:MM
+        log_message("INFO", f"Mengecek jadwal lampu dari server pada {current_schedule_time_hhmm}...")
         
-        # Tambahkan current_time ke query string
-        response = urequests.get(f"{API_BASE_URL}/jadwal/execute?current_time={current_schedule_time}")
+        # Tambahkan current_time ke query string agar Laravel dapat memproses jadwal spesifik
+        response = urequests.get(f"{API_BASE_URL}/jadwal/execute?current_time={current_schedule_time_hhmm}")
         data = response.json()
         
         if data.get('success'):
-            log_message("INFO", "Jadwal berhasil dieksekusi di server")
-            # Ambil status terbaru setelah jadwal dieksekusi
-            lampu_status_after_schedule = check_lampu_status()
+            log_message("INFO", "Jadwal berhasil dieksekusi di server. Memperbarui status lampu...")
+            # Setelah jadwal dieksekusi oleh server, status lampu di DB mungkin sudah berubah.
+            # check_lampu_status akan mengambil status terbaru dan memperbarui light_on dan relay.value().
+            lampu_status_after_schedule = check_lampu_status() 
             if lampu_status_after_schedule:
                 new_status = lampu_status_after_schedule['status']
-                if new_status != light_on:
-                    relay.value(1 if new_status else 0)
-                    light_on = new_status
+                if new_status != light_on: # Hanya log perubahan status jika memang ada perubahan
                     log_message("INFO", f"Mode Jadwal - Status Lampu diubah menjadi: {'Menyala' if new_status else 'Mati'}")
                 else:
                     log_message("INFO", f"Mode Jadwal - Status Lampu tetap: {'Menyala' if light_on else 'Mati'}")
             return True
         else:
-            log_message("INFO", f"Tidak ada perubahan jadwal untuk waktu {current_schedule_time}")
+            log_message("INFO", f"Tidak ada perubahan jadwal yang perlu dieksekusi untuk waktu {current_schedule_time_hhmm}.")
             return False
     except (OSError, ValueError) as e:
         log_message("ERROR", "Kesalahan API saat mengecek jadwal", e)
@@ -221,7 +213,7 @@ def check_schedule():
             response.close()
 
 def update_lampu_status(status, intensitas):
-    response = None # Initialize response to None
+    response = None # Inisialisasi response ke None
     try:
         data = {
             'status': 1 if status else 0,
@@ -250,79 +242,93 @@ def update_lampu_status(status, intensitas):
         if response:
             response.close()
 
-# --- Main Program ---
+## *Program Utama*
 
-# Connect to WiFi and sync NTP, retry indefinitely if fails but with pauses
+# Koneksi ke WiFi dan sinkronisasi waktu, coba terus-menerus dengan jeda jika gagal
 log_message("INFO", "Mencoba koneksi WiFi dan sinkronisasi NTP awal...")
 while True:
     if connect_wifi():
-        if sync_ntp(): # Only sync NTP if WiFi connected successfully
-            break # Exit loop if both WiFi and NTP are successful
+        if sync_ntp(): # Hanya sinkronkan NTP jika WiFi berhasil terhubung
+            break # Keluar dari loop jika WiFi dan NTP berhasil
+    # Jika koneksi atau sinkronisasi gagal, connect_wifi() sudah mencatat error.
+    # Cukup jeda dan coba lagi di sini.
     log_message("FATAL", "Tidak dapat melanjutkan tanpa koneksi WiFi dan waktu yang benar. Mencoba lagi...")
-    time.sleep(10) # Wait before retrying everything
+    time.sleep(10) # Tunggu 10 detik sebelum mencoba lagi
 
 log_message("INFO", "Memulai kontrol lampu pintar multi-mode...")
 
 while True:
     try:
-        current_time = time.time()
+        current_time_seconds = time.time() # Gunakan nama variabel yang berbeda untuk kejelasan
         
-        # Re-sync NTP every interval
-        if current_time - last_ntp_sync >= NTP_SYNC_INTERVAL:
+        # Sinkronkan ulang NTP setiap interval
+        if current_time_seconds - last_ntp_sync >= NTP_SYNC_INTERVAL:
             sync_ntp()
         
-        # Check status from database
-        if current_time - last_check >= CHECK_INTERVAL:
-            current_lampu_status = check_lampu_status()
-            last_check = current_time
+        # Cek status keseluruhan dan mode dari database secara berkala
+        if current_time_seconds - last_check >= CHECK_INTERVAL:
+            current_lampu_status = check_lampu_status() # Simpan status dalam variabel lokal
+            last_check = current_time_seconds
             
-            if not current_lampu_status:
-                log_message("WARNING", "Tidak dapat mengambil status lampu dari DB. Melewatkan logika kontrol...")
-                time.sleep(1)
-                continue
+            if not current_lampu_status: # Jika gagal mengambil status dari DB, lewati logika untuk iterasi ini
+                log_message("WARNING", "Tidak dapat mengambil status lampu dari DB. Melewatkan logika kontrol untuk iterasi ini.")
+                time.sleep(1) 
+                continue # Lanjutkan ke iterasi loop utama berikutnya
             
-            # --- Mode Priority Logic ---
+            # --- Logika Prioritas Mode ---
             
             # Mode 1: Jadwal (Prioritas Tertinggi)
             if current_lampu_status['jadwal']:
                 log_message("INFO", "Mode Jadwal Aktif")
+                
                 # Cek jadwal lebih sering saat mode jadwal aktif
-                if current_time - last_schedule_check >= SCHEDULE_CHECK_INTERVAL:
+                if current_time_seconds - last_schedule_check >= SCHEDULE_CHECK_INTERVAL:
                     log_message("INFO", "Mengecek jadwal...")
-                    check_schedule()
-                    last_schedule_check = current_time
-                continue
+                    check_schedule() # Fungsi ini akan memanggil check_lampu_status lagi untuk memperbarui relay/light_on
+                    last_schedule_check = current_time_seconds
+                
+                # light_on dan relay sudah diperbarui oleh check_schedule() (yang memanggil check_lampu_status).
+                # Jadi, cukup log status saat ini dan lanjutkan.
+                log_message("INFO", f"Mode Jadwal - Status Lampu: {'ON' if light_on else 'OFF'}")
+                time.sleep(0.5) # Jeda singkat untuk mencegah looping terlalu cepat
+                continue # Lewati mode lain dan lanjutkan ke iterasi loop utama berikutnya
             
-            # Mode 2: Otomatis (Sensor)
+            # Mode 2: Otomatis (Sensor) - jika jadwal TIDAK aktif
             elif current_lampu_status['otomatis']:
                 log_message("INFO", "Mode Otomatis Aktif")
                 distance = get_distance()
                 
-                if distance != -1:
+                if distance != -1: # Hanya lanjutkan jika pembacaan sensor valid
                     log_message("INFO", f"Jarak: {distance:.2f} cm")
                     
+                    # Logika untuk menyalakan lampu via sensor
                     if distance < 10 and not light_on:
                         log_message("INFO", "Objek terdeteksi < 10 cm. Menyalakan lampu...")
                         relay.value(1)
                         light_on = True
-                        update_lampu_status(True, 100)
-                    
+                        update_lampu_status(True, 100) # Perbarui status ke DB
+                            
+                    # Logika untuk mematikan lampu via sensor
                     elif distance >= 10 and light_on:
                         log_message("INFO", "Objek tidak terdeteksi atau > 10 cm. Mematikan lampu...")
                         relay.value(0)
                         light_on = False
-                        update_lampu_status(False, 0)
+                        update_lampu_status(False, 0) # Perbarui status ke DB
+                else:
+                    log_message("WARNING", "Gagal membaca sensor ultrasonik dalam mode otomatis.")
                 
-                time.sleep(0.5)
-                continue
+                time.sleep(0.5) # Jeda singkat
+                continue # Lewati mode manual dan lanjutkan ke iterasi loop utama berikutnya
             
-            # Mode 3: Manual
-            else:
+            # Mode 3: Manual (Default) - Jika Jadwal dan Otomatis TIDAK aktif
+            else: # Blok ini dieksekusi jika current_lampu_status['jadwal'] False DAN current_lampu_status['otomatis'] False
                 log_message("INFO", "Mode Manual Aktif")
-                # Status lampu sudah diupdate di check_lampu_status()
-        
-        time.sleep(0.1)
+                # Status relay dan variabel light_on sudah diperbarui oleh check_lampu_status()
+                # di awal blok if current_time_seconds - last_check,
+                # berdasarkan db_status. Tidak ada kontrol relay langsung yang diperlukan di sini.
+            
+        time.sleep(0.1) # Jeda singkat di luar blok if last_check untuk menjaga loop tetap responsif
         
     except Exception as e:
-        log_message("FATAL", "Error dalam loop utama", e)
-        time.sleep(5)
+        log_message("FATAL", "Error tidak terduga dalam loop utama", e)
+        time.sleep(5) # Jeda 5 detik sebelum mencoba lagi setelah error fatal
