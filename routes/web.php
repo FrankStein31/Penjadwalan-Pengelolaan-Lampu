@@ -19,7 +19,12 @@ Route::resource('jadwal', JadwalController::class);
 
 // API Routes
 Route::prefix('api')->group(function() {
+    // Lampu endpoints
     Route::get('/lampu/{id}', [LampuController::class, 'getStatus']);
     Route::post('/lampu/{id}/status', [LampuController::class, 'updateStatus']);
     Route::post('/lampu/{id}/otomatis', [LampuController::class, 'updateOtomatis']);
+    Route::post('/lampu/{id}/jadwal', [LampuController::class, 'updateJadwal'])->name('api.lampu.jadwal');
+    
+    // Jadwal endpoints
+    Route::get('/jadwal/execute', [JadwalController::class, 'executeSchedule']);
 });

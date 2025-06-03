@@ -7,6 +7,7 @@ use App\Models\Lampu;
 use App\Models\Energi;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class LampuController extends Controller
 {
@@ -404,5 +405,44 @@ class LampuController extends Controller
             'otomatis' => $lampu->otomatis,
             'intensitas' => $lampu->intensitas
         ]);
+    }
+
+    /**
+     * Update status jadwal lampu
+     */
+    public function updateJadwal(Request $request, $id)
+    {
+        try {
+            $lampu = Lampu::findOrFail($id);
+            
+            $request->validate([
+                'jadwal' => 'required|boolean',
+            ]);
+
+            // Jika mengaktifkan jadwal, nonaktifkan mode otomatis
+            if ($request->jadwal) {
+                $lampu->update([
+                    'jadwal' => 1,
+                    'otomatis' => 0
+                ]);
+            } else {
+                $lampu->update([
+                    'jadwal' => 0
+                ]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => $request->jadwal ? 'Mode jadwal diaktifkan' : 'Mode jadwal dinonaktifkan'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error saat mengubah mode jadwal: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengubah mode jadwal'
+            ], 500);
+        }
     }
 }
