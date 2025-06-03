@@ -497,7 +497,7 @@
                 
                 <div class="alert alert-primary text-center">
                     <i class="fas fa-info-circle me-2"></i>
-                    Pilih lampu dari tabel di bawah untuk mengatur kecerahan
+                    Pilih lampu dari tabel di bawah untuk mengatur kecerahannya
                 </div>
                 
                 <div class="d-grid gap-2 mt-2">
@@ -527,6 +527,7 @@
                     <th>Lokasi</th>
                     <th>Status</th>
                     <th>Intensitas</th>
+                    <th>Otomatis</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -542,6 +543,14 @@
                         </span>
                     </td>
                     <td><span class="intensitas-info">{{ $l->intensitas }}%</span></td>
+                    <td>
+                        <button class="btn {{ $l->otomatis ? 'btn-success' : 'btn-secondary' }} btn-sm toggle-otomatis" 
+                                data-id="{{ $l->id }}" 
+                                data-otomatis="{{ $l->otomatis }}">
+                            <i class="fas {{ $l->otomatis ? 'fa-robot' : 'fa-hand' }}"></i>
+                            {{ $l->otomatis ? 'Otomatis' : 'Manual' }}
+                        </button>
+                    </td>
                     <td>
                         <div class="btn-group">
                             <button class="btn btn-info btn-sm select-lampu" 
@@ -581,7 +590,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center py-4">
+                    <td colspan="7" class="text-center py-4">
                         <div class="alert alert-warning mb-0">
                             <i class="fas fa-exclamation-triangle me-2"></i> Belum ada data lampu
                         </div>
@@ -1046,6 +1055,56 @@
                     });
             });
         }
+
+        // Tambahkan event listener untuk tombol toggle otomatis
+        document.querySelectorAll('.toggle-otomatis').forEach(button => {
+            button.addEventListener('click', function() {
+                const lampuId = this.dataset.id;
+                const currentOtomatis = parseInt(this.dataset.otomatis);
+                const newOtomatis = currentOtomatis ? 0 : 1;
+                
+                // Ambil token CSRF dari meta tag
+                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                // Kirim request ke server
+                fetch(`/api/lampu/${lampuId}/otomatis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({
+                        otomatis: newOtomatis
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if(data.success) {
+                        // Update tampilan tombol
+                        this.classList.remove(currentOtomatis ? 'btn-success' : 'btn-secondary');
+                        this.classList.add(newOtomatis ? 'btn-success' : 'btn-secondary');
+                        this.dataset.otomatis = newOtomatis;
+                        
+                        // Update ikon dan teks
+                        const icon = this.querySelector('i');
+                        icon.classList.remove(currentOtomatis ? 'fa-robot' : 'fa-hand');
+                        icon.classList.add(newOtomatis ? 'fa-robot' : 'fa-hand');
+                        this.innerHTML = `<i class="fas ${newOtomatis ? 'fa-robot' : 'fa-hand'}"></i> ${newOtomatis ? 'Otomatis' : 'Manual'}`;
+                    } else {
+                        alert('Gagal mengubah mode otomatis');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan saat mengubah mode otomatis');
+                });
+            });
+        });
     });
     
     // Render chart penggunaan daya

@@ -16,3 +16,10 @@ Route::get('/jadwal', [JadwalController::class, 'index'])->name('jadwal.index');
 Route::resource('lampu', LampuController::class);
 
 Route::resource('jadwal', JadwalController::class);
+
+// API Routes
+Route::prefix('api')->group(function() {
+    Route::get('/lampu/{id}', [LampuController::class, 'getStatus']);
+    Route::post('/lampu/{id}/status', [LampuController::class, 'updateStatus']);
+    Route::post('/lampu/{id}/otomatis', [LampuController::class, 'updateOtomatis']);
+});

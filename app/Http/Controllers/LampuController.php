@@ -372,4 +372,37 @@ class LampuController extends Controller
         $lampu->delete();
         return redirect()->route('lampu.index')->with('success', 'Lampu berhasil dihapus!');
     }
+
+    /**
+     * Update status otomatis lampu.
+     */
+    public function updateOtomatis(Request $request, $id)
+    {
+        $lampu = Lampu::findOrFail($id);
+        
+        $request->validate([
+            'otomatis' => 'required|boolean',
+        ]);
+
+        $lampu->update([
+            'otomatis' => $request->otomatis,
+        ]);
+        
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get lampu status for API
+     */
+    public function getStatus($id)
+    {
+        $lampu = Lampu::findOrFail($id);
+        return response()->json([
+            'id' => $lampu->id,
+            'nama_lampu' => $lampu->nama_lampu,
+            'status' => $lampu->status,
+            'otomatis' => $lampu->otomatis,
+            'intensitas' => $lampu->intensitas
+        ]);
+    }
 }
