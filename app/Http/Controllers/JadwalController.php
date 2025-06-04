@@ -148,38 +148,68 @@ class JadwalController extends Controller
     /**
      * Jalankan jadwal berdasarkan hari dan waktu saat ini
      */
-    public function executeSchedule()
+    public function executeSchedule(Request $request)
     {
-        $now = Carbon::now();
-        $currentTime = $now->format('H:i');
-        $currentDay = $now->translatedFormat('l');
+        // Ambil waktu dari parameter atau gunakan waktu sekarang
+        $currentTime = $request->get('current_time', Carbon::now()->format('H:i'));
+        
+        // Sesuaikan dengan format hari di database (Senin, Selasa, dst)
+        $currentDay = Carbon::now()->locale('id')->isoFormat('dddd');
         
         // Dapatkan jadwal yang cocok dengan hari dan waktu saat ini
-        $jadwals = Jadwal::with('lampu')
-            ->where(function($query) use ($currentDay) {
-                $query->where('hari', $currentDay)
-                    ->orWhere('hari', 'Setiap Hari');
-            })
-            ->get();
+        // dan lampu yang mode jadwalnya aktif
+        $jadwals = Jadwal::with(['lampu' => function($query) {
+            $query->where('jadwal', 1);
+        }])
+        ->where(function($query) use ($currentDay) {
+            $query->where('hari', $currentDay)
+                ->orWhere('hari', 'Setiap Hari');
+        })
+        ->whereHas('lampu', function($query) {
+            $query->where('jadwal', 1);
+        })
+        ->get();
+            
+        $action = null;
+        $message = "Tidak ada jadwal untuk waktu ini";
+        $intensitas = 0;
             
         foreach ($jadwals as $jadwal) {
-            // Cek apakah waktu nyala atau mati sesuai dengan waktu saat ini
-            if ($currentTime == substr($jadwal->waktu_nyala, 0, 5)) {
-                // Nyalakan lampu dengan intensitas yang telah ditentukan
-                $lampu = $jadwal->lampu;
-                $lampu->status = 1;
-                $lampu->intensitas = $jadwal->intensitas;
-                $lampu->save();
-            } 
-            else if ($currentTime == substr($jadwal->waktu_mati, 0, 5)) {
-                // Matikan lampu
-                $lampu = $jadwal->lampu;
-                $lampu->status = 0;
-                $lampu->intensitas = 0;
-                $lampu->save();
+            // Skip jika lampu tidak dalam mode jadwal
+            if (!$jadwal->lampu || !$jadwal->lampu->jadwal) {
+                continue;
+            }
+            
+            if ($currentTime >= substr($jadwal->waktu_nyala, 0, 5) && $currentTime < substr($jadwal->waktu_mati, 0, 5)) {
+                $action = 'ON';
+                $intensitas = $jadwal->intensitas;
+                $message = "Lampu aktif dalam rentang waktu jadwal";
+                
+                $jadwal->lampu->update([
+                    'status' => true,
+                    'intensitas' => $jadwal->intensitas
+                ]);
+                break;
+            } elseif ($currentTime >= substr($jadwal->waktu_mati, 0, 5)) {
+                $action = 'OFF';
+                $intensitas = 0;
+                $message = "Lampu dimatikan setelah jadwal selesai";
+                
+                $jadwal->lampu->update([
+                    'status' => false,
+                    'intensitas' => 0
+                ]);
+                break;
             }
         }
         
-        return response()->json(['success' => true, 'message' => 'Jadwal telah diproses']);
+        return response()->json([
+            'success' => true,
+            'action' => $action,
+            'intensitas' => $intensitas,
+            'current_time' => $currentTime,
+            'current_day' => $currentDay,
+            'message' => $message
+        ]);
     }
 }

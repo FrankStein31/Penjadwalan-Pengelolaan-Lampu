@@ -397,14 +397,21 @@ class LampuController extends Controller
      */
     public function getStatus($id)
     {
-        $lampu = Lampu::findOrFail($id);
-        return response()->json([
-            'id' => $lampu->id,
-            'nama_lampu' => $lampu->nama_lampu,
-            'status' => $lampu->status,
-            'otomatis' => $lampu->otomatis,
-            'intensitas' => $lampu->intensitas
-        ]);
+        try {
+            $lampu = Lampu::findOrFail($id);
+            return response()->json([
+                'id' => $lampu->id,
+                'status' => (bool)$lampu->status,
+                'otomatis' => (bool)$lampu->otomatis,
+                'jadwal' => (bool)$lampu->jadwal,
+                'intensitas' => $lampu->intensitas
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mendapatkan status lampu'
+            ], 404);
+        }
     }
 
     /**
@@ -414,34 +421,34 @@ class LampuController extends Controller
     {
         try {
             $lampu = Lampu::findOrFail($id);
+            $jadwal = $request->jadwal;
             
-            $request->validate([
-                'jadwal' => 'required|boolean',
-            ]);
-
-            // Jika mengaktifkan jadwal, nonaktifkan mode otomatis
-            if ($request->jadwal) {
+            // Update mode jadwal dan nonaktifkan mode lain jika jadwal aktif
+            if ($jadwal) {
                 $lampu->update([
-                    'jadwal' => 1,
-                    'otomatis' => 0
+                    'jadwal' => true,
+                    'otomatis' => false,  // Nonaktifkan mode otomatis
+                    'status' => false     // Reset status ke mati
                 ]);
             } else {
                 $lampu->update([
-                    'jadwal' => 0
+                    'jadwal' => false
                 ]);
             }
-            
+
             return response()->json([
                 'success' => true,
-                'message' => $request->jadwal ? 'Mode jadwal diaktifkan' : 'Mode jadwal dinonaktifkan'
+                'message' => $jadwal ? 'Mode jadwal diaktifkan' : 'Mode jadwal dinonaktifkan',
+                'data' => [
+                    'jadwal' => $lampu->jadwal,
+                    'otomatis' => $lampu->otomatis,
+                    'status' => $lampu->status
+                ]
             ]);
-            
         } catch (\Exception $e) {
-            Log::error('Error saat mengubah mode jadwal: ' . $e->getMessage());
-            
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengubah mode jadwal'
+                'message' => 'Gagal mengubah mode jadwal: ' . $e->getMessage()
             ], 500);
         }
     }
