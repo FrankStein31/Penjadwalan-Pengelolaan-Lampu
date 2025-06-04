@@ -481,19 +481,19 @@
 <div class="container mt-5 mb-5">
     <div class="card card-custom p-4">
         <h2 class="section-title">Daftar Semua Jadwal</h2>
-        <div class="table-responsive">
+    <div class="table-responsive">
             <table class="table table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Lampu</th>
-                        <th>Hari</th>
-                        <th>Waktu Nyala</th>
-                        <th>Waktu Mati</th>
+            <thead class="table-dark">
+                <tr>
+                    <th>Lampu</th>
+                    <th>Hari</th>
+                    <th>Waktu Nyala</th>
+                    <th>Waktu Mati</th>
                         <th>Frekuensi</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
                     @forelse($jadwal as $j)
                     <tr>
                         <td>{{ $j->lampu->nama_lampu }} ({{ $j->lampu->lokasi }})</td>
@@ -546,11 +546,11 @@
                             <div class="alert alert-warning mb-0">
                                 <i class="fas fa-exclamation-triangle me-2"></i> Belum ada jadwal yang dibuat
                             </div>
-                        </td>
-                    </tr>
+                    </td>
+                </tr>
                     @endforelse
-                </tbody>
-            </table>
+            </tbody>
+        </table>
         </div>
     </div>
 </div>

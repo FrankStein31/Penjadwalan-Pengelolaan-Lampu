@@ -452,7 +452,7 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="lampu-container" id="lampu-container">
-                    <div class="lampu-glow"></div> <!-- Efek bias cahaya -->
+        <div class="lampu-glow"></div> <!-- Efek bias cahaya -->
                     <svg class="lampu-svg" viewBox="0 0 100 180">
                         <!-- Bohlam lampu -->
                         <ellipse class="lampu-bulb" cx="50" cy="50" rx="25" ry="30" />
@@ -474,8 +474,8 @@
                         <!-- Alas lampu -->
                         <ellipse class="lampu-base" cx="50" cy="155" rx="25" ry="10" />
                         <ellipse fill="#2c3e50" cx="50" cy="152" rx="20" ry="7" />
-                    </svg>
-                    
+        </svg>
+
                     <!-- Refleksi di bawah lampu -->
                     <div class="lampu-reflection"></div>
                 </div>
@@ -497,7 +497,7 @@
                 
                 <div class="alert alert-primary text-center">
                     <i class="fas fa-info-circle me-2"></i>
-                    Pilih lampu dari tabel di bawah untuk mengatur kecerahan
+                    Pilih lampu dari tabel di bawah untuk mengatur kecerahannya
                 </div>
                 
                 <div class="d-grid gap-2 mt-2">
@@ -527,6 +527,7 @@
                     <th>Lokasi</th>
                     <th>Status</th>
                     <th>Intensitas</th>
+                    <th>Mode Kontrol</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -543,16 +544,39 @@
                     </td>
                     <td><span class="intensitas-info">{{ $l->intensitas }}%</span></td>
                     <td>
-                        <div class="btn-group">
-                            <button class="btn btn-info btn-sm select-lampu" 
+                        <div class="d-flex gap-2">
+                            <!-- Tombol Mode Jadwal -->
+                            <button class="btn {{ $l->jadwal ? 'btn-success' : 'btn-outline-success' }} btn-sm toggle-jadwal" 
+                                    data-id="{{ $l->id }}" 
+                                    data-jadwal="{{ $l->jadwal }}">
+                                <i class="fas fa-calendar-alt"></i>
+                                {{ $l->jadwal ? 'Mode Jadwal' : 'Jadwal' }}
+                            </button>
+
+                            <!-- Tombol Mode Otomatis - disabled jika jadwal aktif -->
+                            <button class="btn {{ $l->otomatis ? 'btn-primary' : 'btn-outline-primary' }} btn-sm toggle-otomatis" 
+                                    data-id="{{ $l->id }}" 
+                                    data-otomatis="{{ $l->otomatis }}"
+                                    {{ $l->jadwal ? 'disabled' : '' }}>
+                                <i class="fas {{ $l->otomatis ? 'fa-robot' : 'fa-hand' }}"></i>
+                                {{ $l->otomatis ? 'Otomatis' : 'Manual' }}
+                            </button>
+
+                            <!-- Tombol Nyala/Mati - disabled jika jadwal aktif atau mode otomatis -->
+                            <button class="btn {{ $l->status ? 'btn-warning' : 'btn-secondary' }} btn-sm toggle-status" 
                                     data-id="{{ $l->id }}" 
                                     data-status="{{ $l->status }}"
-                                    data-intensitas="{{ $l->intensitas }}">
-                                <i class="fas fa-hand-pointer"></i> Pilih
+                                    {{ $l->jadwal || $l->otomatis ? 'disabled' : '' }}>
+                                <i class="fas fa-power-off"></i>
+                                {{ $l->status ? 'Matikan' : 'Nyalakan' }}
                             </button>
-                            <button class="btn btn-success btn-sm toggle-status" data-id="{{ $l->id }}" data-status="{{ $l->status }}">
-                                {{ $l->status ? 'Matikan' : 'Hidupkan' }}
-                            </button>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ route('jadwal.index') }}" class="btn btn-info btn-sm">
+                                <i class="fas fa-clock"></i> Atur Jadwal
+                            </a>
                             <button class="btn btn-primary btn-sm view-detail" 
                                     data-id="{{ $l->id }}"
                                     data-nama="{{ $l->nama_lampu }}"
@@ -563,10 +587,12 @@
                                     data-bs-target="#detailLampuModal">
                                 <i class="fa fa-chart-line"></i> Detail
                             </button>
-                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editLampuModal" 
-                                data-id="{{ $l->id }}" 
-                                data-nama="{{ $l->nama_lampu }}" 
-                                data-lokasi="{{ $l->lokasi }}">
+                            <button class="btn btn-warning btn-sm" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editLampuModal" 
+                                    data-id="{{ $l->id }}" 
+                                    data-nama="{{ $l->nama_lampu }}" 
+                                    data-lokasi="{{ $l->lokasi }}">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
                             <form action="{{ route('lampu.destroy', $l->id) }}" method="POST" class="d-inline">
@@ -581,7 +607,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center py-4">
+                    <td colspan="7" class="text-center py-4">
                         <div class="alert alert-warning mb-0">
                             <i class="fas fa-exclamation-triangle me-2"></i> Belum ada data lampu
                         </div>
@@ -921,6 +947,123 @@
         updateDateTime();
         renderTotalConsumptionCharts();
         
+        // Event listener untuk tombol toggle jadwal
+        document.querySelectorAll('.toggle-jadwal').forEach(button => {
+            button.addEventListener('click', function() {
+                const lampuId = this.dataset.id;
+                const currentJadwal = parseInt(this.dataset.jadwal);
+                const newJadwal = currentJadwal ? 0 : 1;
+                
+                // Ambil token CSRF dari meta tag
+                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                // Tampilkan konfirmasi
+                if (newJadwal && !confirm('Aktifkan mode jadwal? Kontrol manual dan otomatis akan dinonaktifkan.')) {
+                    return;
+                }
+                
+                // Kirim request ke server
+                fetch(`/api/lampu/${lampuId}/jadwal`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({
+                        jadwal: newJadwal
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        // Update tampilan tombol jadwal
+                        this.classList.remove(currentJadwal ? 'btn-success' : 'btn-outline-success');
+                        this.classList.add(newJadwal ? 'btn-success' : 'btn-outline-success');
+                        this.dataset.jadwal = newJadwal;
+                        this.innerHTML = `<i class="fas fa-calendar-alt"></i> ${newJadwal ? 'Mode Jadwal' : 'Jadwal'}`;
+                        
+                        // Update status tombol lain
+                        const row = this.closest('tr');
+                        const otomatisBtn = row.querySelector('.toggle-otomatis');
+                        const statusBtn = row.querySelector('.toggle-status');
+                        
+                        if (newJadwal) {
+                            // Nonaktifkan tombol lain
+                            otomatisBtn.disabled = true;
+                            statusBtn.disabled = true;
+                            
+                            // Reset ke mode manual
+                            if (otomatisBtn.classList.contains('btn-primary')) {
+                                otomatisBtn.classList.remove('btn-primary');
+                                otomatisBtn.classList.add('btn-outline-primary');
+                                otomatisBtn.innerHTML = '<i class="fas fa-hand"></i> Manual';
+                            }
+                            
+                            // Tampilkan pesan sukses
+                            alert(data.message);
+                        } else {
+                            // Aktifkan kembali tombol lain
+                            otomatisBtn.disabled = false;
+                            statusBtn.disabled = false;
+                        }
+                    } else {
+                        alert(data.message || 'Gagal mengubah mode jadwal');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan saat mengubah mode jadwal');
+                });
+            });
+        });
+        
+        // Event listener untuk tombol toggle otomatis
+        document.querySelectorAll('.toggle-otomatis').forEach(button => {
+            button.addEventListener('click', function() {
+                const lampuId = this.dataset.id;
+                const currentOtomatis = parseInt(this.dataset.otomatis);
+                const newOtomatis = currentOtomatis ? 0 : 1;
+                
+                // Ambil token CSRF dari meta tag
+                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                // Kirim request ke server
+                fetch(`/api/lampu/${lampuId}/otomatis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({
+                        otomatis: newOtomatis
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        // Update tampilan tombol
+                        this.classList.remove(currentOtomatis ? 'btn-primary' : 'btn-outline-primary');
+                        this.classList.add(newOtomatis ? 'btn-primary' : 'btn-outline-primary');
+                        this.dataset.otomatis = newOtomatis;
+                        
+                        // Update ikon dan teks
+                        this.innerHTML = `<i class="fas ${newOtomatis ? 'fa-robot' : 'fa-hand'}"></i> ${newOtomatis ? 'Otomatis' : 'Manual'}`;
+                        
+                        // Update status tombol kontrol manual
+                        const row = this.closest('tr');
+                        const statusBtn = row.querySelector('.toggle-status');
+                        statusBtn.disabled = newOtomatis;
+                    } else {
+                        alert('Gagal mengubah mode otomatis');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan saat mengubah mode otomatis');
+                });
+            });
+        });
+        
         // Event listener untuk tombol toggle status
         document.querySelectorAll('.toggle-status').forEach(button => {
             button.addEventListener('click', function() {
@@ -928,54 +1071,48 @@
                 const currentStatus = parseInt(this.dataset.status);
                 const newStatus = currentStatus ? 0 : 1;
                 
-                // Update selected lampu untuk kontrol intensitas
-                const selectedLampu = document.getElementById('selected-lampu-id');
-                if (selectedLampu) {
-                    selectedLampu.value = lampuId;
-                }
+                // Ambil token CSRF dari meta tag
+                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                 
-                // Panggil API untuk update status
-                updateLampuIntensitas(lampuId, newStatus, newStatus ? 100 : 0);
-                
-                // Update tampilan lampu demo
-                setBrightness(newStatus ? 3 : 0);
-            });
-        });
-        
-        // Tambahkan event listener untuk tombol pilih lampu
-        document.querySelectorAll('.select-lampu').forEach(button => {
-            button.addEventListener('click', function() {
-                const lampuId = this.dataset.id;
-                const status = parseInt(this.dataset.status);
-                const intensitas = parseInt(this.dataset.intensitas);
-                
-                // Set lampu yang dipilih
-                const selectedLampu = document.getElementById('selected-lampu-id');
-                if (selectedLampu) {
-                    selectedLampu.value = lampuId;
-                }
-                
-                // Highlight tabel row yang dipilih
-                document.querySelectorAll('tr.selected-row').forEach(row => {
-                    row.classList.remove('selected-row');
+                // Kirim request ke server
+                fetch(`/api/lampu/${lampuId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({
+                        status: newStatus,
+                        intensitas: newStatus ? 100 : 0
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        // Update tampilan tombol
+                        this.classList.remove(`btn-${currentStatus ? 'warning' : 'secondary'}`);
+                        this.classList.add(`btn-${newStatus ? 'warning' : 'secondary'}`);
+                        this.dataset.status = newStatus;
+                        this.innerHTML = `<i class="fas fa-power-off"></i> ${newStatus ? 'Matikan' : 'Nyalakan'}`;
+                        
+                        // Update badge status
+                        const row = this.closest('tr');
+                        const statusBadge = row.querySelector('.badge');
+                        statusBadge.classList.remove(currentStatus ? 'bg-success' : 'bg-danger');
+                        statusBadge.classList.add(newStatus ? 'bg-success' : 'bg-danger');
+                        statusBadge.textContent = newStatus ? 'Hidup' : 'Mati';
+                        
+                        // Update info intensitas
+                        const intensitasInfo = row.querySelector('.intensitas-info');
+                        intensitasInfo.textContent = `${newStatus ? '100' : '0'}%`;
+                    } else {
+                        alert(data.message || 'Gagal mengubah status lampu');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan saat mengubah status lampu');
                 });
-                const row = document.querySelector(`tr[data-id="${lampuId}"]`);
-                if (row) {
-                    row.classList.add('selected-row');
-                }
-                
-                // Set tampilan intensitas sesuai data lampu
-                let brightnessLevel = 0;
-                if (status) {
-                    if (intensitas <= 30) brightnessLevel = 1;
-                    else if (intensitas <= 70) brightnessLevel = 2;
-                    else brightnessLevel = 3;
-                }
-                
-                setBrightness(brightnessLevel);
-                
-                // Tampilkan pesan bahwa lampu telah dipilih
-                alert(`Lampu ${row.querySelector('td:nth-child(2)').textContent} telah dipilih. Anda bisa mengatur kecerahannya sekarang.`);
             });
         });
 

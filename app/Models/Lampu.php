@@ -10,7 +10,7 @@ class Lampu extends Model
     use HasFactory;
 
     protected $table = 'lampu'; 
-    protected $fillable = ['nama_lampu', 'lokasi', 'status', 'intensitas'];
+    protected $fillable = ['nama_lampu', 'lokasi', 'status', 'intensitas', 'otomatis', 'jadwal'];
     
     public function jadwal()
     {

@@ -7,6 +7,7 @@ use App\Models\Lampu;
 use App\Models\Energi;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class LampuController extends Controller
 {
@@ -371,5 +372,77 @@ class LampuController extends Controller
         $lampu = Lampu::findOrFail($id);
         $lampu->delete();
         return redirect()->route('lampu.index')->with('success', 'Lampu berhasil dihapus!');
+    }
+
+    /**
+     * Update status otomatis lampu.
+     */
+    public function updateOtomatis(Request $request, $id)
+    {
+        $lampu = Lampu::findOrFail($id);
+        
+        $request->validate([
+            'otomatis' => 'required|boolean',
+        ]);
+
+        $lampu->update([
+            'otomatis' => $request->otomatis,
+        ]);
+        
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get lampu status for API
+     */
+    public function getStatus($id)
+    {
+        $lampu = Lampu::findOrFail($id);
+        return response()->json([
+            'id' => $lampu->id,
+            'nama_lampu' => $lampu->nama_lampu,
+            'status' => $lampu->status,
+            'otomatis' => $lampu->otomatis,
+            'intensitas' => $lampu->intensitas
+        ]);
+    }
+
+    /**
+     * Update status jadwal lampu
+     */
+    public function updateJadwal(Request $request, $id)
+    {
+        try {
+            $lampu = Lampu::findOrFail($id);
+            
+            $request->validate([
+                'jadwal' => 'required|boolean',
+            ]);
+
+            // Jika mengaktifkan jadwal, nonaktifkan mode otomatis
+            if ($request->jadwal) {
+                $lampu->update([
+                    'jadwal' => 1,
+                    'otomatis' => 0
+                ]);
+            } else {
+                $lampu->update([
+                    'jadwal' => 0
+                ]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => $request->jadwal ? 'Mode jadwal diaktifkan' : 'Mode jadwal dinonaktifkan'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error saat mengubah mode jadwal: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengubah mode jadwal'
+            ], 500);
+        }
     }
 }
